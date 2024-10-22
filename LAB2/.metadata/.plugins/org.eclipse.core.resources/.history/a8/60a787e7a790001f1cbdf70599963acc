@@ -1,0 +1,10 @@
+package model;
+
+public class DVD {
+	 private String title;
+	 private String category;
+	 private String director;
+	 private float length;
+	 private float cost;
+	
+}
