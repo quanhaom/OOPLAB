@@ -1,0 +1,58 @@
+package frame;
+
+import java.awt.BorderLayout;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import services.Store;
+
+public class ManagerFrame extends JFrame {
+    private Store store; 
+    private LoginFrame loginFrame;
+
+    public ManagerFrame(Store store, LoginFrame loginFrame) { 
+        this.store = store;
+        this.loginFrame = loginFrame;
+
+        setTitle("Manager Frame");
+        setSize(600, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        JPanel buttonPanel = new JPanel();
+        JButton productsButton = new JButton("Products");
+        JButton ordersButton = new JButton("Orders");
+        JButton logoutButton = new JButton("Logout");
+
+        buttonPanel.add(productsButton);
+        buttonPanel.add(ordersButton);
+        buttonPanel.add(logoutButton);
+        add(buttonPanel, BorderLayout.CENTER);
+
+        logoutButton.addActionListener(e -> logout());
+        productsButton.addActionListener(e -> showProducts());
+        ordersButton.addActionListener(e -> showOrders());
+    }
+
+    private void showProducts() {
+        ProductFrame productFrame = new ProductFrame(store);
+        productFrame.setVisible(true);
+        this.dispose(); // Close the current frame
+    }
+
+    private void showOrders() {
+        OrdersFrame ordersFrame = new OrdersFrame(store); // Assuming you have an OrdersFrame
+        ordersFrame.setVisible(true);
+        this.dispose(); // Close the current frame
+    }
+
+    private void logout() {
+        int response = JOptionPane.showConfirmDialog(this, "Are you sure you want to log out?", 
+                                                     "Confirm Logout", JOptionPane.YES_NO_OPTION);
+        if (response == JOptionPane.YES_OPTION) {
+            loginFrame.setVisible(true);
+            this.dispose(); // Close the ManagerFrame
+        }
+    }
+}

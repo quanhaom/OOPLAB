@@ -1,0 +1,285 @@
+package frame;
+
+import java.awt.BorderLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.table.TableColumn;
+
+import model.DVD;
+import services.MySQLConnection;
+import services.Store;
+
+public class EmployeeFrame extends BaseFrame {
+
+    private LoginFrame loginFrame;
+    private JLabel greetingLabel;
+    private String userId;
+    private LocalDateTime loginTime;
+    private LocalDateTime logoutTime;
+    protected static final int WIDTH = 1385;
+    protected static final int HEIGHT = 900;
+    
+
+    public EmployeeFrame(Store store, LoginFrame loginFrame, String userId, String Name) {
+        super(store);
+        this.loginFrame = loginFrame;
+        setSize(WIDTH, HEIGHT);
+        this.userId = userId;
+        this.loginTime = LocalDateTime.now();
+        setTitle("Employee Frame");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        JPanel greetingPanel = new JPanel();
+        if (Name != null) {
+            greetingLabel = new JLabel("Hello, " + Name);
+            greetingPanel.add(greetingLabel);
+            greetingLabel.addMouseListener(new MouseAdapter() {
+                public void mouseClicked(MouseEvent e) {
+                    showGreetingOptions();
+                }
+            });
+        }
+
+        JPanel buttonPanel = new JPanel();
+        JButton addProductButton = new JButton("Add Product");
+        JButton editProductButton = new JButton("Edit Product");
+        JButton removeProductButton = new JButton("Remove Product");
+
+        buttonPanel.add(addProductButton);
+        buttonPanel.add(editProductButton);
+        buttonPanel.add(removeProductButton);
+
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BorderLayout());
+        mainPanel.add(greetingPanel, BorderLayout.NORTH);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        add(mainPanel, BorderLayout.SOUTH);
+
+        addProductButton.addActionListener(e -> addProduct());
+        editProductButton.addActionListener(e -> editProduct());
+        removeProductButton.addActionListener(e -> removeProduct());
+
+        loadProducts();
+    }
+
+    private void addProduct() {
+        String[] types = {"Book", "Toy", "Stationery"};
+        String type = (String) JOptionPane.showInputDialog(this, "Select Product Type:", "Product Selection",
+                JOptionPane.QUESTION_MESSAGE, null, types, types[0]);
+
+        String name = JOptionPane.showInputDialog(this, "Enter Product Name:");
+        String priceStr = JOptionPane.showInputDialog(this, "Enter Product Price:");
+        String quantityStr = JOptionPane.showInputDialog(this, "Enter Quantity:");
+        String inputpriceStr = JOptionPane.showInputDialog(this, "Enter Input Price:");
+
+        if (name != null && priceStr != null && quantityStr != null && type != null) {
+            try {
+                double price = Double.parseDouble(priceStr);
+                int quantity = Integer.parseInt(quantityStr);
+                double inputprice =  Double.parseDouble(inputpriceStr);
+                Product product = null;
+
+                int id = store.getNextProductId();
+
+                switch (type) {
+                    case "Book":
+                        String author = JOptionPane.showInputDialog(this, "Enter Author:");
+                        String publisher = JOptionPane.showInputDialog(this, "Enter Publisher:");
+                        String isbn = JOptionPane.showInputDialog(this, "Enter ISBN:");
+                        int publicationYear = Integer.parseInt(JOptionPane.showInputDialog(this, "Enter Publication Year:"));
+                        product = new Book(String.valueOf(id), name, price, quantity,inputprice, author, isbn, publicationYear, publisher);
+                        break;
+                    case "Toy":
+                        String brand = JOptionPane.showInputDialog(this, "Enter Brand:");
+                        String material = JOptionPane.showInputDialog(this, "Enter Material:");
+                        int suitage = Integer.parseInt(JOptionPane.showInputDialog(this, "Enter Suitable Age:"));
+                        product = new Toy(String.valueOf(id), name, price, quantity,inputprice, brand, suitage, material);
+                        break;
+                    case "Stationery":
+                        String brandsta = JOptionPane.showInputDialog(this, "Enter Brand:");
+                        String materialsta = JOptionPane.showInputDialog(this, "Enter Material:");
+                        product = new Stationery(String.valueOf(id), name, price, quantity,inputprice, brandsta, materialsta);
+                        break;
+                    default:
+                        JOptionPane.showMessageDialog(this, "Invalid product type.");
+                        return;
+                }
+
+                store.addProduct(product,quantity);
+                loadProducts();
+                JOptionPane.showMessageDialog(this, "Product added successfully.");
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Invalid input for price or quantity.");
+            }
+        }
+    }
+
+    private void editProduct() {
+        int selectedRow = productTable.getSelectedRow();
+
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a product to edit.");
+            return;
+        }
+
+        String id = (String) tableModel.getValueAt(selectedRow, 0);
+
+        Product existingProduct = store.getProductById(id);
+        if (existingProduct == null) {
+            JOptionPane.showMessageDialog(this, "Product not found.");
+            return;
+        }
+
+        String newName = JOptionPane.showInputDialog(this, "Enter new Product Name:", existingProduct.getName());
+        String newPriceStr = JOptionPane.showInputDialog(this, "Enter new Product Price:", existingProduct.getPrice());
+        String newQuantityStr = JOptionPane.showInputDialog(this, "Enter new Quantity:", existingProduct.getQuantity());
+        String newInputPriceStr = JOptionPane.showInputDialog(this, "Enter new Input Price:", existingProduct.getInputPrice());
+
+        if (newName != null && newPriceStr != null && newQuantityStr != null) {
+            try {
+                double newPrice = Double.parseDouble(newPriceStr);
+                int newQuantity = Integer.parseInt(newQuantityStr);
+                double newInputPrice = Double.parseDouble(newInputPriceStr);
+                existingProduct.setName(newName);
+                existingProduct.setPrice(newPrice);
+                existingProduct.setQuantity(newQuantity);
+
+                if (existingProduct instanceof Book) {
+                    Book book = (Book) existingProduct;
+                    String newAuthor = JOptionPane.showInputDialog(this, "Enter new Author:", book.getAuthor());
+                    String newIsbn = JOptionPane.showInputDialog(this, "Enter new ISBN:", book.getIsbn());
+                    String newPublisher = JOptionPane.showInputDialog(this, "Enter new Publisher:", book.getPublisher());
+
+                    if (newAuthor != null && newIsbn != null && newPublisher != null) {
+                        book.setAuthor(newAuthor);
+                        book.setIsbn(newIsbn);
+                        book.setPublisher(newPublisher);
+                    }
+                } else if (existingProduct instanceof Toy) {
+                    Toy toy = (Toy) existingProduct;
+                    String newBrand = JOptionPane.showInputDialog(this, "Enter new Brand:", toy.getBrand());
+                    String newMaterial = JOptionPane.showInputDialog(this, "Enter new Material:", toy.getMaterial());
+
+                    if (newBrand != null && newMaterial != null) {
+                        toy.setBrand(newBrand);
+                        toy.setMaterial(newMaterial);
+                    }
+                } else if (existingProduct instanceof Stationery) {
+                    Stationery stationery = (Stationery) existingProduct;
+                    String newBrand = JOptionPane.showInputDialog(this, "Enter new Brand:", stationery.getBrand());
+                    String newMaterial = JOptionPane.showInputDialog(this, "Enter new Material:", stationery.getMaterial());
+
+                    if (newBrand != null && newMaterial != null) {
+                        stationery.setBrand(newBrand);
+                        stationery.setMaterial(newMaterial);
+                    }
+                }
+
+                store.updateProduct(existingProduct);
+                loadProducts();
+                JOptionPane.showMessageDialog(this, "Product updated successfully.");
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Invalid input for price or quantity.");
+            }
+        }
+    }
+
+    private void removeProduct() {
+        int selectedRow = productTable.getSelectedRow();
+
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a product to remove.");
+            return;
+        }
+
+        String id = (String) tableModel.getValueAt(selectedRow, 0);
+        String name = (String) tableModel.getValueAt(selectedRow, 2);
+
+        int confirmation = JOptionPane.showConfirmDialog(this, "Are you sure you want to remove " + name + "?", "Confirm Removal", JOptionPane.YES_NO_OPTION);
+        if (confirmation == JOptionPane.YES_OPTION) {
+            store.removeProduct(id);
+            loadProducts();
+            JOptionPane.showMessageDialog(this, name + " removed successfully.");
+        }
+    }
+
+    private void logout() {
+        logoutTime = LocalDateTime.now();
+        long durationInMinutes = ChronoUnit.MINUTES.between(loginTime, logoutTime);
+        double durationInHours = durationInMinutes / 60.0;
+        long durationToUpdate = Math.round(durationInHours);
+        
+        store.updateWorkingHours(userId, durationToUpdate);
+
+        long hours = durationInMinutes / 60;
+        long minutes = durationInMinutes % 60;
+        String durationStr = String.format("%02d:%02d", hours, minutes);
+
+        try (Connection conn = new MySQLConnection().getConnection()) {
+            String sql = "INSERT INTO employee_tracking (name, logintime, logouttime, duration) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, userId);
+                pstmt.setObject(2, loginTime);
+                pstmt.setObject(3, logoutTime); 
+                pstmt.setString(4, durationStr);
+
+                pstmt.executeUpdate(); 
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        loginFrame.setVisible(true);
+        dispose();
+    }
+
+    private void loadProducts() {
+        displayAllProducts();
+    }
+
+    private void showGreetingOptions() {
+        String[] options = {"Log out", "Edit Profile"};
+        int choice = JOptionPane.showOptionDialog(this, "Choose an option:", "Options",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+
+        if (choice == 0) {
+            logout();
+        } else if (choice == 1) {
+            openEditProfile();
+        }
+    }
+
+    public void openEditProfile() {
+        new EditPro5(userId);
+    }
+    @Override
+    protected void displayAllProducts() {
+        tableModel.setRowCount(0);  
+
+        List<Product> products = store.getProducts();
+        products = sortProducts(products);
+
+        for (Product product : products) {
+            String[] rowData = getProductRowData(product);
+            tableModel.addRow(rowData);
+        }
+        TableColumn inputPriceColumn = productTable.getColumnModel().getColumn(5);
+        inputPriceColumn.setMinWidth(50);
+        inputPriceColumn.setMaxWidth(200);
+        inputPriceColumn.setPreferredWidth(100);
+    }
+}

@@ -1,0 +1,43 @@
+package model;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Manager {
+    private String username;
+    private String password;
+
+    public Manager(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public List<Manager> getUsers(Connection connection) {
+        List<Manager> users = new ArrayList<>();
+        String sql = "SELECT username, password FROM User"; // Adjust table name if needed
+        try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                Manager manager = new Manager(
+                    rs.getString("username"),
+                    rs.getString("password")
+                );
+                users.add(manager);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(); // Consider logging this instead
+        }
+        return users;
+    }
+}

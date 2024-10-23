@@ -9,6 +9,7 @@
 		<item key="isRegEx" value="false"/>
 		<list key="findhistory">
 			<item value="//"/>
+			<item value="update"/>
 			<item value="Person"/>
 			<item value="System"/>
 			<item value="loadProducts"/>

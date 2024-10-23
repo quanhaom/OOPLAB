@@ -1,0 +1,66 @@
+package model;
+
+import java.awt.GridLayout;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+public class Customer {
+
+    private void viewCart() {
+        if (cart.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Your cart is empty.");
+            return;
+        }
+
+        JPanel panel = new JPanel(new GridLayout(cart.size() + 1, 4));
+        panel.add(new JLabel("DVD Title"));
+        panel.add(new JLabel("Price"));
+        panel.add(new JLabel("Quantity"));
+        panel.add(new JLabel("Total Price"));
+
+        List<DVD> dvdList = new ArrayList<>(cart.keySet());
+
+        for (DVD dvd : dvdList) {
+            int quantity = cart.get(dvd);
+
+            JTextField titleField = new JTextField(dvd.getTitle());
+            titleField.setEditable(false);
+            JTextField priceField = new JTextField(String.format("%.2f", dvd.getCost()));
+            priceField.setEditable(false);
+            JTextField quantityField = new JTextField(String.valueOf(quantity));
+            double totalPrice = dvd.getCost() * quantity;
+            JTextField totalPriceField = new JTextField(String.format("%.2f", totalPrice));
+            totalPriceField.setEditable(false);
+
+            panel.add(titleField);
+            panel.add(priceField);
+            panel.add(quantityField);
+            panel.add(totalPriceField);
+        }
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "View Cart", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            for (int index = 0; index < dvdList.size(); index++) {
+                JTextField quantityField = (JTextField) panel.getComponent(4 + (index * 4) + 2);
+                String quantityText = quantityField.getText().trim();
+
+                try {
+                    int newQuantity = Integer.parseInt(quantityText);
+                    if (newQuantity <= 0) {
+                        cart.remove(dvdList.get(index));
+                        JOptionPane.showMessageDialog(this, dvdList.get(index).getTitle() + " removed from cart.");
+                    } else {
+                        cart.put(dvdList.get(index), newQuantity);
+                    }
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "Invalid quantity for " + dvdList.get(index).getTitle());
+                }
+            }
+        }
+    }
+}

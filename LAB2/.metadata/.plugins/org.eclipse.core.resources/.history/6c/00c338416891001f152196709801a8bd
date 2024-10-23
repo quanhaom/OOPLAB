@@ -1,0 +1,188 @@
+package services;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import model.DVD;
+import model.Manager;
+
+public class Store {
+    private Connection connection;
+
+    public Store() {
+        try {
+            connection = new MySQLConnection().getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Manager> getUsers() {
+        List<Manager> users = new ArrayList<>();
+        String sql = "SELECT id, username, password FROM User"; // Adjust table name if needed
+        try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                Manager manager = new Manager(
+                    rs.getString("username"),
+                    rs.getString("password")
+                );
+                users.add(manager);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    public List<DVD> getDVDs() {
+        List<DVD> dvds = new ArrayList<>();
+        String sql = "SELECT * FROM products"; 
+
+        try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                DVD dvd = new DVD();
+                dvd.setId(rs.getString("id")); // Ensure you're retrieving ID
+                dvd.setTitle(rs.getString("title"));
+                dvd.setCategory(rs.getString("category"));
+                dvd.setDirector(rs.getString("director"));
+                dvd.setLength(rs.getFloat("length"));
+                dvd.setCost(rs.getFloat("cost"));
+                dvds.add(dvd);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return dvds;
+    }
+
+    public DVD getDVDById(String dvdId) {
+        DVD dvd = null; 
+        String sql = "SELECT * FROM products WHERE id = ?"; // Assuming your table is still 'products'
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, dvdId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) { 
+                    dvd = new DVD();
+                    dvd.setId(rs.getString("id")); // Ensure you're retrieving ID
+                    dvd.setTitle(rs.getString("title"));
+                    dvd.setCategory(rs.getString("category"));
+                    dvd.setDirector(rs.getString("director"));
+                    dvd.setLength(rs.getFloat("length"));
+                    dvd.setCost(rs.getFloat("cost"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return dvd; 
+    }
+
+    public void removeProduct(String productId) {
+        String sql = "DELETE FROM products WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, productId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<DVD> searchByCategory(String category) {
+        String sql = "SELECT * FROM products WHERE category = ?";
+        return searchProductsByAttribute(sql, category);
+    }
+
+    public List<DVD> searchByLength(int length) {
+        String sql = "SELECT * FROM products WHERE length = ?";
+        return searchProductsByAttribute(sql, String.valueOf(length));
+    }
+
+    public List<DVD> searchByCost(double cost) {
+        String sql = "SELECT * FROM products WHERE cost = ?";
+        return searchProductsByAttribute(sql, String.valueOf(cost));
+    }
+
+    public List<DVD> searchByDirector(String director) {
+        String sql = "SELECT * FROM products WHERE director = ?";
+        return searchProductsByAttribute(sql, director);
+    }
+
+    private List<DVD> searchProductsByAttribute(String sql, String parameter) {
+        List<DVD> productList = new ArrayList<>();
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, parameter);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                DVD dvd = extractProductFromResultSet(rs);
+                productList.add(dvd);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return productList;
+    }
+
+    private DVD extractProductFromResultSet(ResultSet rs) throws SQLException {
+        String id = rs.getString("id");
+        String title = rs.getString("title");
+        String category = rs.getString("category");
+        double length = rs.getDouble("length");
+        double cost = rs.getDouble("cost");
+        String director = rs.getString("director");
+
+        return new DVD(id, title, category, director, length, cost);
+    }
+
+    public void updateProduct(DVD dvd) {
+        String sql = "UPDATE products SET title = ?, category = ?, director = ?, length = ?, cost = ? WHERE id = ?"; 
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, dvd.getTitle());
+            stmt.setString(2, dvd.getCategory());
+            stmt.setString(3, dvd.getDirector());
+            stmt.setDouble(4, dvd.getLength());
+            stmt.setDouble(5, dvd.getCost());
+            stmt.setString(6, dvd.getId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace(); 
+        }
+    }
+
+    public int getNextProductId() {
+        String sqlMaxId = "SELECT COALESCE(MAX(id), 0) FROM products";
+        try (PreparedStatement stmt = connection.prepareStatement(sqlMaxId);
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1) + 1; 
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 1; 
+    }
+
+    public void addProduct(DVD dvd) {
+        String sqlInsert = "INSERT INTO products (id, title, category, director, length, cost) VALUES (?, ?, ?, ?, ?, ?)";
+        
+        try {
+            int newId = getNextProductId();
+            try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
+                stmtInsert.setInt(1, newId);
+                stmtInsert.setString(2, dvd.getTitle());
+                stmtInsert.setString(3, dvd.getCategory());
+                stmtInsert.setString(4, dvd.getDirector());
+                stmtInsert.setDouble(5, dvd.getLength());
+                stmtInsert.setDouble(6, dvd.getCost());
+                stmtInsert.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}

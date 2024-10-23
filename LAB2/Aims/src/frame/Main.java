@@ -1,11 +1,11 @@
 package frame;
 
-import services.Store;
+import model.DVD;
 
 public class Main {
     public static void main(String[] args) {
-        Store store = new Store();
-        RoleSelectionFrame roleSelectionFrame = new RoleSelectionFrame(store);
+        DVD dvd = new DVD();
+        RoleSelectionFrame roleSelectionFrame = new RoleSelectionFrame(dvd);
         roleSelectionFrame.setVisible(true);
     }
 }

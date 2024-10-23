@@ -1,0 +1,13 @@
+package frame;
+
+import model.DVD;
+import model.Manager;
+
+public class Main {
+    public static void main(String[] args) {
+        Manager manager = new Manager(null,null);
+        DVD dvd = new DVD();
+        RoleSelectionFrame roleSelectionFrame = new RoleSelectionFrame(dvd);
+        roleSelectionFrame.setVisible(true);
+    }
+}

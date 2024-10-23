@@ -1,0 +1,44 @@
+package frame;
+
+import javax.swing.*;
+import model.Manager;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import services.Store;
+
+public class RoleSelectionFrame extends JFrame {
+    private JButton customerButton;
+    private JButton managerButton;
+
+    public RoleSelectionFrame(Store store, Manager manager) {
+        setTitle("Select Role");
+        setSize(300, 150);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new GridLayout(2, 1));
+
+        customerButton = new JButton("Customer");
+        managerButton = new JButton("Manager");
+
+        managerButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                LoginFrame loginFrame = new LoginFrame(store,null);
+                loginFrame.setVisible(true);
+                dispose();
+            }
+        });
+
+        customerButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                CustomerFrame customerFrame = new CustomerFrame(store,null);
+                customerFrame.setVisible(true);
+                dispose();            }
+        });
+
+        add(customerButton);
+        add(managerButton);
+    }
+}

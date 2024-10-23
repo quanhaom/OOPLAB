@@ -1,0 +1,13 @@
+package frame;
+
+import model.Manager;
+import services.Store;
+
+public class Main {
+    public static void main(String[] args) {
+        Store store = new Store();
+        Manager manager = new Manager();
+        RoleSelectionFrame roleSelectionFrame = new RoleSelectionFrame(store);
+        roleSelectionFrame.setVisible(true);
+    }
+}

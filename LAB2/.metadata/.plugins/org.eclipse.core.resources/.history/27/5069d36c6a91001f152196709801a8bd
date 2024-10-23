@@ -1,0 +1,19 @@
+package services;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import model.DVD;
+import model.Manager;
+
+public class Store {
+    private Connection connection;
+
+    public Store() {
+        try {
+            connection = new MySQLConnection().getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}

@@ -19,18 +19,16 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-
 import services.MySQLConnection;
-import services.Store;
 import model.DVD;
 
 public class CustomerFrame extends BaseFrame {
     private Map<DVD, Integer> cart;
-    private LoginFrame loginFrame;
+    private DVD dvd;
 
-    public CustomerFrame(Store store, LoginFrame loginFrame) { 
-        super(store);  
-        this.loginFrame = loginFrame;
+    public CustomerFrame(DVD dvd) { 
+        super(dvd); 
+        this.dvd=dvd;
         this.cart = new HashMap<>();  
         setTitle("Customer Frame");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -86,7 +84,6 @@ public class CustomerFrame extends BaseFrame {
 
     private void addToCart() {
         int selectedRow = productTable.getSelectedRow();
-
         if (selectedRow != -1) {
             String dvdId = (String) tableModel.getValueAt(selectedRow, 0);
             for (DVD dvd : cart.keySet()) {
@@ -96,8 +93,8 @@ public class CustomerFrame extends BaseFrame {
                     return; 
                 }
             }
-            for (DVD dvd : store.getDVDs()) {
-                if (dvd.getId().equals(dvdId)) {
+            for (DVD dvd : dvd.getDVDs()) {
+            	if (dvd.getId().equals(dvdId)) {
                     cart.put(dvd, 1);
                     JOptionPane.showMessageDialog(this, dvd.getTitle() + " has been added to your cart.");
                     return;
@@ -108,7 +105,6 @@ public class CustomerFrame extends BaseFrame {
             JOptionPane.showMessageDialog(this, "Please select a valid DVD to add to cart.");
         }
     }
-    
     private void viewCart() {
         if (cart.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Your cart is empty.");
@@ -161,6 +157,12 @@ public class CustomerFrame extends BaseFrame {
             }
         }
     }
+    private DVD selectRandomFreeItem(List<DVD> dvdList) {
+        if (dvdList.isEmpty()) {
+            return null;
+        }        int randomIndex = (int) (Math.random() * dvdList.size());
+        return dvdList.get(randomIndex);
+    }
     private void checkout() {
         if (cart.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Your cart is empty.");
@@ -182,7 +184,10 @@ public class CustomerFrame extends BaseFrame {
             totalMass += 5 * quantity;
             totalQuantity += quantity;
         }
-
+        if (totalQuantity > 20) {
+            JOptionPane.showMessageDialog(this, "You cannot purchase more than 20 DVDs at once.");
+            return;
+        }
         double vat = totalCostBeforeVAT * 0.15;
         double deliveryFee = 5 * totalMass;
         double totalCostAfterVAT = totalCostBeforeVAT + vat + deliveryFee;
@@ -224,16 +229,11 @@ public class CustomerFrame extends BaseFrame {
 
         JOptionPane.showMessageDialog(this, invoice.toString());
         
-        processPayment(totalCostAfterVAT, orderId);
+        processPayment(totalCostAfterVAT, orderId, deliveryAddress, deliveryInstructions);
         cart.clear();
     }
-    private DVD selectRandomFreeItem(List<DVD> dvdList) {
-        if (dvdList.isEmpty()) {
-            return null;
-        }        int randomIndex = (int) (Math.random() * dvdList.size());
-        return dvdList.get(randomIndex);
-    }
-    private void processPayment(double amount, String orderId) {
+
+    private void processPayment(double amount, String orderId, String deliveryAddress, String deliveryInstructions) {
         JTextField cardOwnerField = new JTextField();
         JTextField cardNumberField = new JTextField();
 
@@ -252,14 +252,17 @@ public class CustomerFrame extends BaseFrame {
                 JOptionPane.showMessageDialog(this, "Card owner and card number cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            String insertOrderSQL = "INSERT INTO orders (orderID, cardOwner, cardNumber, totalCost) VALUES (?, ?, ?, ?)";
-            
+            String insertOrderSQL = "INSERT INTO orders (orderID, cardOwner, cardNumber, totalCost, status, address, instructions) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
             try (Connection connection = new MySQLConnection().getConnection();
                  PreparedStatement preparedStatement = connection.prepareStatement(insertOrderSQL)) {
                 preparedStatement.setString(1, orderId);
                 preparedStatement.setString(2, cardOwner);
                 preparedStatement.setString(3, cardNumber);
                 preparedStatement.setDouble(4, amount);
+                preparedStatement.setString(5, "pending");
+                preparedStatement.setString(6, deliveryAddress);
+                preparedStatement.setString(7, deliveryInstructions);
 
                 preparedStatement.executeUpdate();
 
@@ -270,9 +273,10 @@ public class CustomerFrame extends BaseFrame {
             }
         }
     }
+
     private void logout() {
-        RoleSelectionFrame roleSelectionFrame = new RoleSelectionFrame(null);
-		roleSelectionFrame.setVisible(true);
+		RoleSelectionFrame roleselectionframe = new RoleSelectionFrame(dvd);
+		roleselectionframe.setVisible(true);
         dispose();
     }
 }
