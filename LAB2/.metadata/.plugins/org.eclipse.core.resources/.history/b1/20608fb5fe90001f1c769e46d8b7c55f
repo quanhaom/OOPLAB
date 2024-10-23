@@ -1,0 +1,223 @@
+package frame;
+
+import java.awt.BorderLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.net.URL;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.stream.Collectors;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.JComboBox;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.TableColumn;
+import model.DVD;
+import services.Store;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public abstract class BaseFrame extends JFrame {
+    protected Store store;
+    protected JTable productTable;
+    protected DefaultTableModel tableModel;
+    protected JTextField searchField;
+    protected JLabel suggestionLabel;
+    protected JComboBox<String> sortOptions;
+    protected JLabel timeLabel; 
+    protected static final int WIDTH = 1285;
+    protected static final int HEIGHT = 900;
+
+    public BaseFrame(Store store) {
+        this.store = store;
+        setSize(WIDTH, HEIGHT);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+
+        JPanel searchPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        searchPanel.add(new JLabel("Search:"), gbc);
+
+        gbc.gridx = 1;
+        searchField = new JTextField(15);
+        searchPanel.add(searchField, gbc);
+
+        String[] sortingCriteria = { "ID", "Price", "Quantity", "Product Type" };
+        sortOptions = new JComboBox<>(sortingCriteria);
+        sortOptions.addActionListener(e -> updateSortedProductDisplay());
+        gbc.gridx = 2;
+        searchPanel.add(sortOptions, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        suggestionLabel = new JLabel();
+        searchPanel.add(suggestionLabel, gbc);
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.add(searchPanel, BorderLayout.NORTH);
+
+        timeLabel = new JLabel();
+        timeLabel.setHorizontalAlignment(JLabel.CENTER);
+        topPanel.add(timeLabel, BorderLayout.SOUTH);
+
+        add(topPanel, BorderLayout.NORTH);
+
+
+
+        String[] columnNames = { "ID", "Title", "Category", "Director", "Length","Cost" };
+        tableModel = new DefaultTableModel(columnNames, 0);
+        productTable = new JTable(tableModel);
+        
+        productTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        productTable.setFillsViewportHeight(true); 
+
+        int[] columnWidths = {20, 60, 300, 50, 50,50}; 
+        for (int i = 0; i < columnWidths.length; i++) {
+            TableColumn column = productTable.getColumnModel().getColumn(i);
+            column.setPreferredWidth(columnWidths[i]); 
+            column.setResizable(true); 
+           
+        }
+
+        add(new JScrollPane(productTable), BorderLayout.CENTER);
+
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateSearchSuggestions();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateSearchSuggestions();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateSearchSuggestions();
+            }
+        });
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                updateCurrentTime();
+            }
+        }, 0, 1000);
+
+        displayAllProducts();
+    }
+
+    private void updateCurrentTime() {
+        SwingUtilities.invokeLater(() -> {
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+            timeLabel.setText("Current Time: " + sdf.format(new Date()));
+        });
+    }
+
+    protected void displayAllProducts() {
+        tableModel.setRowCount(0);  // Clear existing rows in the table model
+
+        List<DVD> DVDs = store.getDVDs(); // Retrieve the list of DVDs
+        DVDs = sortDVDs(DVDs); // Sort the DVDs, assuming sortProducts is defined
+
+        // Loop through each DVD and add its data to the table
+        for (DVD dvd : DVDs) { // Changed from Product to DVD
+            String[] rowData = getProductRowData(dvd); // Assuming this method takes a DVD object
+            tableModel.addRow(rowData); // Add row data to the table model
+        }
+    }
+    protected String[] getProductRowData(DVD dvd) {
+        return new String[] {
+            dvd.getId(),                           // Assuming DVD has a method getId()
+            dvd.getTitle(),                        // Assuming DVD has a method getTitle()
+            dvd.getCategory(),                     // Assuming DVD has a method getCategory()
+            dvd.getDirector(),                     // Assuming DVD has a method getDirector()
+            String.valueOf(dvd.getLength()),      // Assuming DVD has a method getLength()
+            String.format("%.2f", dvd.getCost())  // Assuming DVD has a method getCost()
+        };
+    }
+
+    protected List<DVD> sortDVDs(List<DVD> dvds) {
+        String selectedCriteria = (String) sortOptions.getSelectedItem();
+
+        return dvds.stream()
+                .sorted((dvd1, dvd2) -> {
+                    switch (selectedCriteria) {
+                        case "ID":
+                            return Integer.compare(Integer.parseInt(dvd1.getId()), Integer.parseInt(dvd2.getId()));
+                        case "Title":
+                            return dvd1.getTitle().compareTo(dvd2.getTitle());
+                        case "Category":
+                            return dvd1.getCategory().compareTo(dvd2.getCategory());
+                        case "Director":
+                            return dvd1.getDirector().compareTo(dvd2.getDirector());
+                        case "Length":
+                            return Double.compare(dvd1.getLength(), dvd2.getLength());
+                        case "Cost":
+                            return Double.compare(dvd1.getCost(), dvd2.getCost());
+                        default:
+                            return 0; // No sorting applied
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+    private void updateSortedProductDisplay() {
+        // Refresh the product display to reflect any changes or sort orders
+        displayAllProducts(); // This method should sort and display all products, including DVDs.
+    }
+
+    protected void updateSearchSuggestions() {
+        String query = searchField.getText().trim();
+        tableModel.setRowCount(0); // Clear the current table data
+
+        if (query.isEmpty()) {
+            suggestionLabel.setText(""); // Clear suggestion label if query is empty
+            displayAllProducts(); // Display all products when there's no search query
+            return;
+        }
+
+        List<DVD> dvds = store.getDVDs(); // Get list of DVDs specifically
+        List<DVD> filteredDVDs = dvds.stream()
+            .filter(dvd -> dvdMatchesQuery(dvd, query)) // Use a specific matching method for DVDs
+            .collect(Collectors.toList());
+
+        if (!filteredDVDs.isEmpty()) {
+            for (DVD dvd : filteredDVDs) {
+                String[] rowData = getProductRowData(dvd); // Use the DVD-specific row data method
+                tableModel.addRow(rowData); // Add the row data to the table
+            }
+        }
+    }
+
+    private boolean productMatchesQuery(DVD dvd, String query) {
+        // Convert the query to lowercase for case-insensitive comparison
+        query = query.toLowerCase();
+
+        // Check DVD-specific fields
+        return dvd.getId().toLowerCase().contains(query) || 
+               dvd.getTitle().toLowerCase().contains(query) || 
+               dvd.getDirector().toLowerCase().contains(query) || 
+               dvd.getCategory().toLowerCase().contains(query) || 
+               String.valueOf(dvd.getLength()).contains(query) || 
+               String.valueOf(dvd.getCost()).contains(query);
+    }
+
+}

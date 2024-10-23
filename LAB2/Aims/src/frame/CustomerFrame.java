@@ -1,33 +1,37 @@
 package frame;
 
 import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+import services.MySQLConnection;
 import services.Store;
+import model.DVD;
 
 public class CustomerFrame extends BaseFrame {
-    private List<Product> cart;
-    private JLabel greetingLabel;
-    private String userId;
+    private Map<DVD, Integer> cart;
     private LoginFrame loginFrame;
 
     public CustomerFrame(Store store, LoginFrame loginFrame) { 
         super(store);  
         this.loginFrame = loginFrame;
-        this.cart = new ArrayList<>();  
-        this.userId = userId;
+        this.cart = new HashMap<>();  
         setTitle("Customer Frame");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -36,35 +40,15 @@ public class CustomerFrame extends BaseFrame {
         JButton addToCartButton = new JButton("Add to Cart");
         JButton viewCartButton = new JButton("View Cart");
         JButton checkoutButton = new JButton("Check out");
+        JButton logoutButton = new JButton("Exit");
 
         buttonPanel.add(viewCartButton);
         buttonPanel.add(checkoutButton);
         buttonPanel.add(addToCartButton);
-        JPanel greetingPanel = new JPanel();
-        if (Name == null) {
-        	greetingLabel = new JLabel("Hello, Stranger ");
-        	greetingPanel.add(greetingLabel);
-            greetingLabel.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    showLogout();
-                }
-            });
-        }
-        else {
-        	greetingLabel = new JLabel("Hello, " + Name);
-        	greetingPanel.add(greetingLabel);
-            greetingLabel.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    showGreetingOptions();
-                }
-            });
-        }
+        buttonPanel.add(logoutButton);
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BorderLayout());
-        mainPanel.add(greetingPanel, BorderLayout.NORTH);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         add(mainPanel, BorderLayout.SOUTH);
@@ -89,116 +73,206 @@ public class CustomerFrame extends BaseFrame {
                 checkout();
             }
         });
-
-
+        
+        logoutButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                logout();
+            }
+        });
 
         displayAllProducts();
     }
 
-    private void showGreetingOptions() {
-        String[] options = {"Log out", "Edit Profile"};
-        int choice = JOptionPane.showOptionDialog(this, "Choose an option:", "Options",
-                JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
-
-        if (choice == 0) {
-            logout();
-        } else if (choice == 1) {
-            openEditProfile();
-        }
-    }
-    public void openEditProfile() {
-        new EditPro5( userId);
-    }
     private void addToCart() {
         int selectedRow = productTable.getSelectedRow();
 
         if (selectedRow != -1) {
-            String productId = (String) tableModel.getValueAt(selectedRow, 0);
-            for (Product product : cart) {
-                if (product.getId().equals(productId)) {
-                    product.setQuantity(product.getQuantity() + 1);
-                    JOptionPane.showMessageDialog(this, product.getName() + " quantity increased to " + product.getQuantity());
+            String dvdId = (String) tableModel.getValueAt(selectedRow, 0);
+            for (DVD dvd : cart.keySet()) {
+                if (dvd.getId().equals(dvdId)) {
+                    cart.put(dvd, cart.get(dvd) + 1);
+                    JOptionPane.showMessageDialog(this, dvd.getTitle() + " quantity increased to " + cart.get(dvd));
                     return; 
                 }
             }
-            for (Product product : store.getProducts()) {
-                if (product.getId().equals(productId)) {
-                    Product newProduct = new Product(product.getId(), product.getName(), product.getPrice(), 1, product.getInputPrice());
-                    cart.add(newProduct);
-                    JOptionPane.showMessageDialog(this, product.getName() + " has been added to your cart.");
+            for (DVD dvd : store.getDVDs()) {
+                if (dvd.getId().equals(dvdId)) {
+                    cart.put(dvd, 1);
+                    JOptionPane.showMessageDialog(this, dvd.getTitle() + " has been added to your cart.");
                     return;
                 }
             }
-            JOptionPane.showMessageDialog(this, "Product not found in the store.");
+            JOptionPane.showMessageDialog(this, "DVD not found in the store.");
         } else {
-            JOptionPane.showMessageDialog(this, "Please select a valid product to add to cart.");
+            JOptionPane.showMessageDialog(this, "Please select a valid DVD to add to cart.");
         }
     }
-
+    
     private void viewCart() {
         if (cart.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Your cart is empty.");
             return;
         }
 
-        StringBuilder cartContents = new StringBuilder("Your Cart:\n");
-        for (Product product : cart) {
-            cartContents.append(String.format("%s - Price: %.2f - Quantity: %d\n", 
-                product.getName(), product.getPrice(), product.getQuantity()));
+        JPanel panel = new JPanel(new GridLayout(cart.size() + 1, 4));
+        panel.add(new JLabel("DVD Title"));
+        panel.add(new JLabel("Price"));
+        panel.add(new JLabel("Quantity"));
+        panel.add(new JLabel("Total Price"));
+
+        List<DVD> dvdList = new ArrayList<>(cart.keySet());
+
+        for (DVD dvd : dvdList) {
+            int quantity = cart.get(dvd);
+
+            JTextField titleField = new JTextField(dvd.getTitle());
+            titleField.setEditable(false);
+            JTextField priceField = new JTextField(String.format("%.2f", dvd.getCost()));
+            priceField.setEditable(false);
+            JTextField quantityField = new JTextField(String.valueOf(quantity));
+            double totalPrice = dvd.getCost() * quantity;
+            JTextField totalPriceField = new JTextField(String.format("%.2f", totalPrice));
+            totalPriceField.setEditable(false);
+
+            panel.add(titleField);
+            panel.add(priceField);
+            panel.add(quantityField);
+            panel.add(totalPriceField);
         }
 
-        JOptionPane.showMessageDialog(this, cartContents.toString());
-    }
+        int result = JOptionPane.showConfirmDialog(this, panel, "View Cart", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            for (int index = 0; index < dvdList.size(); index++) {
+                JTextField quantityField = (JTextField) panel.getComponent(4 + (index * 4) + 2);
+                String quantityText = quantityField.getText().trim();
 
+                try {
+                    int newQuantity = Integer.parseInt(quantityText);
+                    if (newQuantity <= 0) {
+                        cart.remove(dvdList.get(index));
+                        JOptionPane.showMessageDialog(this, dvdList.get(index).getTitle() + " removed from cart.");
+                    } else {
+                        cart.put(dvdList.get(index), newQuantity);
+                    }
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "Invalid quantity for " + dvdList.get(index).getTitle());
+                }
+            }
+        }
+    }
     private void checkout() {
         if (cart.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Your cart is empty.");
             return;
         }
 
-        StringBuilder checkoutSummary = new StringBuilder("You have checked out:\n");
-        for (Product product : cart) {
-            String productId = product.getId();
-            int quantityToCheckout = product.getQuantity();
+        String deliveryAddress = JOptionPane.showInputDialog(this, "Enter your delivery address:");
+        String deliveryInstructions = JOptionPane.showInputDialog(this, "Enter delivery instructions (if any):");
 
-            for (Product storeProduct : store.getProducts()) {
-                if (storeProduct.getId().equals(productId)) {
-                    int currentStock = storeProduct.getQuantity();
+        double totalCostBeforeVAT = 0.0;
+        double totalMass = 0.0;
+        int totalQuantity = 0;
 
-                    if (currentStock < quantityToCheckout) {
-                        JOptionPane.showMessageDialog(this, "Cannot check out " + quantityToCheckout + " of " + product.getName() + " due to insufficient stock.");
-                        return;
-                    }
-                    storeProduct.setQuantity(currentStock - quantityToCheckout);
-                    store.updateProductQuantity(storeProduct.getId(), currentStock - quantityToCheckout);
-                    double profit = storeProduct.getPrice() - storeProduct.getInputPrice();
-                    store.insertProductChangeHistory(storeProduct.getName(), storeProduct.getInputPrice(), storeProduct.getPrice(), profit, "sell", quantityToCheckout);
+        List<DVD> dvdList = new ArrayList<>(cart.keySet());
+        for (Map.Entry<DVD, Integer> entry : cart.entrySet()) {
+            DVD dvd = entry.getKey();
+            int quantity = entry.getValue();
+            totalCostBeforeVAT += dvd.getCost() * quantity;
+            totalMass += 5 * quantity;
+            totalQuantity += quantity;
+        }
 
-                    checkoutSummary.append(String.format("%s - Price: %.2f - Quantity: %d\n", 
-                        storeProduct.getName(), storeProduct.getPrice(), quantityToCheckout));
-                    break; 
+        double vat = totalCostBeforeVAT * 0.15;
+        double deliveryFee = 5 * totalMass;
+        double totalCostAfterVAT = totalCostBeforeVAT + vat + deliveryFee;
+
+        DVD freeItem = (totalQuantity > 5) ? selectRandomFreeItem(dvdList) : null;
+
+        if (freeItem != null) {
+            totalCostAfterVAT -= freeItem.getCost() * 1.15;
+            totalCostBeforeVAT -= freeItem.getCost();
+        }
+        String orderId = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+
+        StringBuilder invoice = new StringBuilder();
+        invoice.append("Invoice:\n");
+        invoice.append("Order ID: ").append(orderId).append("\n");
+        invoice.append("Delivery Address: ").append(deliveryAddress).append("\n");
+        invoice.append("Delivery Instructions: ").append(deliveryInstructions).append("\n\n");
+        invoice.append("DVDs Purchased:\n");
+
+        for (Map.Entry<DVD, Integer> entry : cart.entrySet()) {
+            DVD dvd = entry.getKey();
+            int quantity = entry.getValue();
+            if (dvd.equals(freeItem)) {
+                invoice.append(String.format("%s - Price: 0.00 (Free Item)\n", dvd.getTitle()));
+                if (quantity > 1) {
+                    invoice.append(String.format("%s - Price: %.2f - Quantity: %d\n", 
+                            dvd.getTitle(), dvd.getCost(), quantity - 1));
                 }
+            } else {
+                invoice.append(String.format("%s - Price: %.2f - Quantity: %d\n", 
+                        dvd.getTitle(), dvd.getCost(), quantity));
             }
         }
 
-        JOptionPane.showMessageDialog(this, checkoutSummary.toString());
+        invoice.append(String.format("\nTotal Cost Before VAT: %.2f\n", totalCostBeforeVAT));
+        invoice.append(String.format("VAT (15%%): %.2f\n", vat));
+        invoice.append(String.format("Delivery Fee: %.2f\n", deliveryFee));
+        invoice.append(String.format("Total Cost After VAT: %.2f\n", totalCostAfterVAT));
+
+        JOptionPane.showMessageDialog(this, invoice.toString());
+        
+        processPayment(totalCostAfterVAT, orderId);
         cart.clear();
-        displayAllProducts();
     }
+    private DVD selectRandomFreeItem(List<DVD> dvdList) {
+        if (dvdList.isEmpty()) {
+            return null;
+        }        int randomIndex = (int) (Math.random() * dvdList.size());
+        return dvdList.get(randomIndex);
+    }
+    private void processPayment(double amount, String orderId) {
+        JTextField cardOwnerField = new JTextField();
+        JTextField cardNumberField = new JTextField();
 
+        JPanel paymentPanel = new JPanel(new GridLayout(0, 2));
+        paymentPanel.add(new JLabel("Card Owner:"));
+        paymentPanel.add(cardOwnerField);
+        paymentPanel.add(new JLabel("Card Number:"));
+        paymentPanel.add(cardNumberField);
 
+        int result = JOptionPane.showConfirmDialog(this, paymentPanel, "Payment Information", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            String cardOwner = cardOwnerField.getText().trim();
+            String cardNumber = cardNumberField.getText().trim();
+
+            if (cardOwner.isEmpty() || cardNumber.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Card owner and card number cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            String insertOrderSQL = "INSERT INTO orders (orderID, cardOwner, cardNumber, totalCost) VALUES (?, ?, ?, ?)";
+            
+            try (Connection connection = new MySQLConnection().getConnection();
+                 PreparedStatement preparedStatement = connection.prepareStatement(insertOrderSQL)) {
+                preparedStatement.setString(1, orderId);
+                preparedStatement.setString(2, cardOwner);
+                preparedStatement.setString(3, cardNumber);
+                preparedStatement.setDouble(4, amount);
+
+                preparedStatement.executeUpdate();
+
+                String paymentSummary = String.format("Payment of %.2f has been processed.\nOrder ID: %s", amount, orderId);
+                JOptionPane.showMessageDialog(this, paymentSummary);
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Error saving order to database: " + e.getMessage());
+            }
+        }
+    }
     private void logout() {
-        this.dispose();
-        loginFrame.setVisible(true);
+        RoleSelectionFrame roleSelectionFrame = new RoleSelectionFrame(null);
+		roleSelectionFrame.setVisible(true);
+        dispose();
     }
-    private void showLogout() {
-        int choice = JOptionPane.showConfirmDialog(this, "Are you sure you want to log out?", "Logout Confirmation",
-                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-
-        if (choice == JOptionPane.YES_OPTION) {
-            this.dispose();
-            LoginFrame loginFrame = new LoginFrame(null); 
-            loginFrame.setVisible(true);
-        } 
-    } 
 }

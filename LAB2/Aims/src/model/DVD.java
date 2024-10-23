@@ -1,13 +1,37 @@
 package model;
 
 public class DVD {
-	 private String title;
+	 private String id;
+	private String title;
 	 private String category;
 	 private String director;
-	 private float length;
-	 private float cost;
+	 private double length;
+	 private double cost;
+	    public DVD() {
+	        this.id = "";
+	        this.title = "";
+	        this.category = "";
+	        this.director = "";
+	        this.length = 0.0;
+	        this.cost = 0.0;
+	    }
+	 
+	 public DVD(String id, String title, String category, String director,double length,double cost) {
+		 this.id=id;
+		 this.title = title;
+		 this.category = category;
+		 this.director = director;
+		 this.length = length;
+		 this.cost = cost;
+	 }
 	public String getTitle() {
 		return title;
+	}
+	 public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
 	}
 	public void setTitle(String title) {
 		this.title = title;
@@ -24,17 +48,18 @@ public class DVD {
 	public void setDirector(String director) {
 		this.director = director;
 	}
-	public float getLength() {
+	public double getLength() {
 		return length;
 	}
-	public void setLength(float length) {
+	public void setLength(double length) {
 		this.length = length;
 	}
-	public float getCost() {
+	public double getCost() {
 		return cost;
 	}
-	public void setCost(float cost) {
+	public void setCost(double cost) {
 		this.cost = cost;
 	}
+
 	
 }

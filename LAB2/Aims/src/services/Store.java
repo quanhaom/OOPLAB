@@ -1,4 +1,5 @@
 package services;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,17 +16,18 @@ public class Store {
             e.printStackTrace();
         }
     }
+
     public List<Manager> getUsers() {
         List<Manager> users = new ArrayList<>();
         String sql = "SELECT id, username, password FROM User"; // Adjust table name if needed
         try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 Manager manager = new Manager(
-                    rs.getString("id"), 
+                    rs.getString("id"),
                     rs.getString("username"),
                     rs.getString("password")
                 );
-                users.add(manager);  // Add the manager object after creation
+                users.add(manager);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -33,272 +35,126 @@ public class Store {
         return users;
     }
 
-    public List<Product> getProducts() {
-        List<Product> products = new ArrayList<>();
-        String sql = "SELECT * FROM products";
+    public List<DVD> getDVDs() {
+        List<DVD> dvds = new ArrayList<>();
+        String sql = "SELECT * FROM products"; 
+
         try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                String type = rs.getString("type");
-                Product product;
-
-                switch (type) {
-                    case "Toy":
-                        product = new Toy(
-                            rs.getString("id"),
-                            rs.getString("name"),
-                            rs.getDouble("price"),
-                            rs.getInt("quantity"),
-                            rs.getDouble("inputprice"),
-                            rs.getString("brand"),
-                            rs.getInt("suitage"),
-                            rs.getString("material")
-                        );
-                        break;
-                    case "Stationery":
-                        product = new Stationery(
-                            rs.getString("id"),
-                            rs.getString("name"),
-                            rs.getDouble("price"),
-                            rs.getInt("quantity"),
-                            rs.getDouble("inputprice"),
-                            rs.getString("brand"),
-                            rs.getString("material")
-                        );
-                        break;
-                    case "Book":
-                        product = new Book(
-                            rs.getString("id"),
-                            rs.getString("name"),
-                            rs.getDouble("price"),
-                            rs.getInt("quantity"),
-                            rs.getDouble("inputprice"),
-                            rs.getString("author"),
-                            rs.getString("isbn"),
-                            rs.getInt("publication_year"),
-                            rs.getString("publisher")
-                        );
-                        break;
-                    default:
-                        continue;
-                }
-                products.add(product);
+                DVD dvd = new DVD();
+                dvd.setId(rs.getString("id")); // Ensure you're retrieving ID
+                dvd.setTitle(rs.getString("title"));
+                dvd.setCategory(rs.getString("category"));
+                dvd.setDirector(rs.getString("director"));
+                dvd.setLength(rs.getFloat("length"));
+                dvd.setCost(rs.getFloat("cost"));
+                dvds.add(dvd);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return products;
+
+        return dvds;
     }
 
-    public Product getProductById(String productId) {
-        Product product = null; 
-        String sql = "SELECT * FROM products WHERE id = ?";
+    public DVD getDVDById(String dvdId) {
+        DVD dvd = null; 
+        String sql = "SELECT * FROM products WHERE id = ?"; // Assuming your table is still 'products'
+
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, productId);
+            stmt.setString(1, dvdId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) { 
-                    String type = rs.getString("type");
-
-                    switch (type) {
-                        case "Toy":
-                            product = new Toy(
-                                rs.getString("id"),
-                                rs.getString("name"),
-                                rs.getDouble("price"),
-                                rs.getInt("quantity"),
-                                rs.getDouble("inputprice"),
-                                rs.getString("brand"),
-                                rs.getInt("suitage"),
-                                rs.getString("material")
-                            );
-                            break;
-                        case "Stationery":
-                            product = new Stationery(
-                                rs.getString("id"),
-                                rs.getString("name"),
-                                rs.getDouble("price"),
-                                rs.getInt("quantity"),
-                                rs.getDouble("inputprice"),
-                                rs.getString("brand"),
-                                rs.getString("material")
-                            );
-                            break;
-                        case "Book":
-                            product = new Book(
-                                rs.getString("id"),
-                                rs.getString("name"),
-                                rs.getDouble("price"),
-                                rs.getInt("quantity"),
-                                rs.getDouble("inputprice"),
-                                rs.getString("author"),
-                                rs.getString("isbn"),
-                                rs.getInt("publication_year"),
-                                rs.getString("publisher")
-                            );
-                            break;
-                    }
+                    dvd = new DVD();
+                    dvd.setId(rs.getString("id")); // Ensure you're retrieving ID
+                    dvd.setTitle(rs.getString("title"));
+                    dvd.setCategory(rs.getString("category"));
+                    dvd.setDirector(rs.getString("director"));
+                    dvd.setLength(rs.getFloat("length"));
+                    dvd.setCost(rs.getFloat("cost"));
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return product; 
+        return dvd; 
     }
+
     public void removeProduct(String productId) {
         String sql = "DELETE FROM products WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, productId);
-            
-            int rowsAffected = stmt.executeUpdate();
+            stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public List<Product> searchByAuthor(String author) {
-        List<Product> productList = new ArrayList<>();
-        String sql = "SELECT * FROM products WHERE author = ?"; 
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, author); 
-            ResultSet rs = stmt.executeQuery(); 
-            
-            while (rs.next()) {
-                String id = rs.getString("id");
-                String name = rs.getString("name");
-                double price = rs.getDouble("price");
-                int quantity = rs.getInt("quantity");
-                double inputprice = rs.getDouble("inputprice");
-                String authorName = rs.getString("author");
-                Product product = new Book(id, name, price, quantity,inputprice, authorName, rs.getString("isbn"), 
-                                           rs.getInt("publication_year"), rs.getString("publisher"));
-                productList.add(product); 
-            }
-        } catch (SQLException e) {
-            e.printStackTrace(); 
-        }
-        
-        return productList; 
+    public List<DVD> searchByCategory(String category) {
+        String sql = "SELECT * FROM products WHERE category = ?";
+        return searchProductsByAttribute(sql, category);
     }
-    public List<Product> searchByName(String name) {
-        List<Product> productList = new ArrayList<>();
-        String sql = "SELECT * FROM products WHERE name LIKE ?"; 
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, "%" + name + "%"); 
-            ResultSet rs = stmt.executeQuery(); 
-            
-            while (rs.next()) {
-                String id = rs.getString("id");
-                String productName = rs.getString("name");
-                double price = rs.getDouble("price");
-                int quantity = rs.getInt("quantity");
-                double inputprice = rs.getDouble("inputprice");
-                Product product = new Product(id, productName, price, quantity,inputprice);
-                productList.add(product);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace(); 
-        }
-        
-        return productList; 
+    public List<DVD> searchByLength(int length) {
+        String sql = "SELECT * FROM products WHERE length = ?";
+        return searchProductsByAttribute(sql, String.valueOf(length));
     }
-    public List<Book> searchByPublicationYear(int year) {
-        List<Book> bookList = new ArrayList<>();
-        String sql = "SELECT * FROM products WHERE publication_year = ?"; 
+
+    public List<DVD> searchByCost(double cost) {
+        String sql = "SELECT * FROM products WHERE cost = ?";
+        return searchProductsByAttribute(sql, String.valueOf(cost));
+    }
+
+    public List<DVD> searchByDirector(String director) {
+        String sql = "SELECT * FROM products WHERE director = ?";
+        return searchProductsByAttribute(sql, director);
+    }
+
+    private List<DVD> searchProductsByAttribute(String sql, String parameter) {
+        List<DVD> productList = new ArrayList<>();
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, year); 
+            stmt.setString(1, parameter);
             ResultSet rs = stmt.executeQuery();
-            
+
             while (rs.next()) {
-                String id = rs.getString("id");
-                String name = rs.getString("name");
-                double price = rs.getDouble("price");
-                int quantity = rs.getInt("quantity");
-                double inputprice = rs.getDouble("inputprice");
-                String author = rs.getString("author");
-                String isbn = rs.getString("isbn");
-                int publicationYear = rs.getInt("publication_year");
-                String publisher = rs.getString("publisher");
-                Book book = new Book(id, name, price, quantity,inputprice, author, isbn, publicationYear, publisher);
-                bookList.add(book);
+                DVD dvd = extractProductFromResultSet(rs);
+                productList.add(dvd);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        
-        return bookList; 
-    }
-    public void insertProductChangeHistory(String productName, double inputPrice, double price, double profit,String action_type, int quantity) {
-        String sql = "INSERT INTO product_change_history (product_name, input_price, price, profit, action_type,quantity) VALUES (?, ?, ?, ?, ?,?)";
-        
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, productName);
-            pstmt.setDouble(2, inputPrice);
-            pstmt.setDouble(3, price);
-            pstmt.setDouble(4, profit);
-            pstmt.setString(5, action_type);
-            pstmt.setInt(6,quantity);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+
+        return productList;
     }
 
+    private DVD extractProductFromResultSet(ResultSet rs) throws SQLException {
+        String id = rs.getString("id");
+        String title = rs.getString("title");
+        String category = rs.getString("category");
+        double length = rs.getDouble("length");
+        double cost = rs.getDouble("cost");
+        String director = rs.getString("director");
 
-    public void updateWorkingHours(String userId, long duration) {
-        String query = "UPDATE users SET working_hours = working_hours + ? WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-            pstmt.setLong(1, duration);
-            pstmt.setString(2, userId);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace(); 
-        }
+        return new DVD(id, title, category, director, length, cost);
     }
-    public void updateProduct(Product product) {
-        String sql = "UPDATE products SET name = ?, price = ?, quantity = ?,inputprice = ?, author = ?, isbn = ?, publisher = ?, brand = ?, material = ? WHERE id = ?"; 
+
+    public void updateProduct(DVD dvd) {
+        String sql = "UPDATE products SET title = ?, category = ?, director = ?, length = ?, cost = ? WHERE id = ?"; 
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, product.getName()); 
-            stmt.setDouble(2, product.getPrice());
-            stmt.setInt(3, product.getQuantity());
-            stmt.setDouble(4, product.getInputPrice());
-
-            if (product instanceof Book) {
-                Book book = (Book) product;
-                stmt.setString(5, book.getAuthor());
-                stmt.setString(6, book.getIsbn()); 
-                stmt.setString(7, book.getPublisher()); 
-                stmt.setNull(8, Types.VARCHAR); 
-                stmt.setNull(9, Types.VARCHAR); 
-            } else if (product instanceof Toy) {
-                Toy toy = (Toy) product;
-                stmt.setNull(5, Types.VARCHAR); 
-                stmt.setNull(6, Types.VARCHAR); 
-                stmt.setNull(7, Types.VARCHAR); 
-                stmt.setString(8, toy.getBrand()); 
-                stmt.setString(9, toy.getMaterial());
-            } else if (product instanceof Stationery) {
-                Stationery stationery = (Stationery) product;
-                stmt.setNull(5, Types.VARCHAR); 
-                stmt.setNull(6, Types.VARCHAR); 
-                stmt.setNull(7, Types.VARCHAR);
-                stmt.setString(8, stationery.getBrand());
-                stmt.setString(9, stationery.getMaterial()); 
-            } else {
-                stmt.setNull(5, Types.VARCHAR);
-                stmt.setNull(6, Types.VARCHAR); 
-                stmt.setNull(7, Types.VARCHAR); 
-                stmt.setNull(8, Types.VARCHAR);
-                stmt.setNull(9, Types.VARCHAR); 
-            }
-            stmt.setString(10, product.getId());
-
+            stmt.setString(1, dvd.getTitle());
+            stmt.setString(2, dvd.getCategory());
+            stmt.setString(3, dvd.getDirector());
+            stmt.setDouble(4, dvd.getLength());
+            stmt.setDouble(5, dvd.getCost());
+            stmt.setString(6, dvd.getId());
+            stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace(); 
         }
     }
+
     public int getNextProductId() {
         String sqlMaxId = "SELECT COALESCE(MAX(id), 0) FROM products";
         try (PreparedStatement stmt = connection.prepareStatement(sqlMaxId);
@@ -311,86 +167,23 @@ public class Store {
         }
         return 1; 
     }
-    public void updateProductQuantity(String productId, int newQuantity) {
-        String sql = "UPDATE products SET quantity = ? WHERE id = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, newQuantity);
-            stmt.setString(2, productId);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-    public void addProduct(Product product,int quantity) {
-        String sqlMaxId = "SELECT MAX(id) FROM products";
-        String sqlInsert = "INSERT INTO products (id, name, price, quantity, brand, suitage, material, type, author, isbn, publication_year, publisher, inputprice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        String sqlInsertHistory = "INSERT INTO product_change_history (product_name, input_price, price, profit,action_type,quantity) VALUES (?, ?, ?, ?, ?,?)";
 
+    public void addProduct(DVD dvd, int quantity) {
+        String sqlInsert = "INSERT INTO products (id, title, category, director, length, cost) VALUES (?, ?, ?, ?, ?, ?)";
+        
         try {
-            int newId = 1;
-            try (PreparedStatement stmtMax = connection.prepareStatement(sqlMaxId);
-                 ResultSet rs = stmtMax.executeQuery()) {
-                if (rs.next()) {
-                    newId = rs.getInt(1) + 1;
-                }
-            }
-
+            int newId = getNextProductId();
             try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
                 stmtInsert.setInt(1, newId);
-                stmtInsert.setString(2, product.getName());
-                stmtInsert.setDouble(3, product.getPrice());
-                stmtInsert.setInt(4, product.getQuantity());
-
-                if (product instanceof Toy) {
-                    Toy toy = (Toy) product;
-                    stmtInsert.setString(5, toy.getBrand());
-                    stmtInsert.setInt(6, toy.getSuitAge());
-                    stmtInsert.setString(7, toy.getMaterial());
-                    stmtInsert.setString(8, "Toy");
-                    stmtInsert.setNull(9, Types.VARCHAR);
-                    stmtInsert.setNull(10, Types.VARCHAR);
-                    stmtInsert.setNull(11, Types.INTEGER);
-                    stmtInsert.setNull(12, Types.VARCHAR);
-                } else if (product instanceof Stationery) {
-                    Stationery stationery = (Stationery) product;
-                    stmtInsert.setString(5, stationery.getBrand());
-                    stmtInsert.setNull(6, Types.INTEGER);
-                    stmtInsert.setString(7, stationery.getMaterial());
-                    stmtInsert.setString(8, "Stationery");
-                    stmtInsert.setNull(9, Types.VARCHAR);
-                    stmtInsert.setNull(10, Types.VARCHAR);
-                    stmtInsert.setNull(11, Types.INTEGER);
-                    stmtInsert.setNull(12, Types.VARCHAR);
-                } else if (product instanceof Book) {
-                    Book book = (Book) product;
-                    stmtInsert.setNull(5, Types.VARCHAR);
-                    stmtInsert.setNull(6, Types.INTEGER);
-                    stmtInsert.setNull(7, Types.VARCHAR);
-                    stmtInsert.setString(8, "Book");
-                    stmtInsert.setString(9, book.getAuthor());
-                    stmtInsert.setString(10, book.getIsbn());
-                    stmtInsert.setInt(11, book.getPublicationYear());
-                    stmtInsert.setString(12, book.getPublisher());
-                }
-
-                stmtInsert.setDouble(13, product.getInputPrice());
+                stmtInsert.setString(2, dvd.getTitle());
+                stmtInsert.setString(3, dvd.getCategory());
+                stmtInsert.setString(4, dvd.getDirector());
+                stmtInsert.setDouble(5, dvd.getLength());
+                stmtInsert.setDouble(6, dvd.getCost());
                 stmtInsert.executeUpdate();
             }
-
-            try (PreparedStatement stmtHistory = connection.prepareStatement(sqlInsertHistory)) {
-                stmtHistory.setString(1, product.getName());
-                stmtHistory.setDouble(2, product.getInputPrice());
-                stmtHistory.setDouble(3, product.getPrice());
-                stmtHistory.setDouble(4, 0.0);
-                stmtHistory.setString(5, "buy");
-                stmtHistory.setInt(6, quantity);
-                stmtHistory.executeUpdate();
-            }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-
-    
 }
