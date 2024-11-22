@@ -1,0 +1,7 @@
+package model;
+
+public class Cart {
+	private void addDVDToCart(DVD dvd) {
+		
+	}
+}
