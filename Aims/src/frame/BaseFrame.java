@@ -20,21 +20,22 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public abstract class BaseFrame extends JFrame {
-    protected JTable productTable;
-    protected DefaultTableModel tableModel;
+    protected static JTable productTable;
+    protected static DefaultTableModel tableModel;
     protected JTextField searchField;
     protected JLabel suggestionLabel;
-    protected JComboBox<String> sortOptions;
     protected JLabel timeLabel;
     protected JComboBox<String> productTypeComboBox;
     protected DVD dvd;
     protected Book book;
     protected CD cd;
+    private JButton playButton;
+    private JButton viewTrack;
 
-    protected static final int WIDTH = 1200;
+    protected static final int WIDTH = 900;
     protected static final int HEIGHT = 650;
 
-    public BaseFrame(DVD dvd, Book book, CD cd) {
+    public BaseFrame(DVD dvd, Book book, CD cd ) {
         this.dvd = dvd;
         this.book = book;
         this.cd = cd;
@@ -44,7 +45,6 @@ public abstract class BaseFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // Search Panel
         JPanel searchPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
@@ -54,7 +54,7 @@ public abstract class BaseFrame extends JFrame {
         searchPanel.add(new JLabel("Search:"), gbc);
 
         gbc.gridx = 1;
-        searchField = new JTextField(20); 
+        searchField = new JTextField(20);
         searchPanel.add(searchField, gbc);
 
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -62,7 +62,7 @@ public abstract class BaseFrame extends JFrame {
         JLabel productTypeLabel = new JLabel("Select Product Type:");
         topPanel.add(productTypeLabel);
 
-        productTypeComboBox = new JComboBox<>(new String[] {"DVD", "Book", "CD"});
+        productTypeComboBox = new JComboBox<>(new String[] { "DVD", "Book", "CD" });
         productTypeComboBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -72,19 +72,47 @@ public abstract class BaseFrame extends JFrame {
         topPanel.add(productTypeComboBox);
 
         timeLabel = new JLabel("Current Time: ");
-        timeLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         topPanel.add(timeLabel);
+
+        playButton = new JButton("Play");
+        viewTrack = new JButton("View Tracks");
+        
+        playButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                playMedia();
+            }
+        });
+
+        viewTrack.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                viewTrack();
+            }
+        });
+     
+
+        playButton.setVisible(false);
+        viewTrack.setVisible(false);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        buttonPanel.add(playButton);
+        buttonPanel.add(viewTrack);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.add(topPanel, BorderLayout.NORTH);
         mainPanel.add(searchPanel, BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
         add(mainPanel, BorderLayout.NORTH);
 
         tableModel = new DefaultTableModel();
         productTable = new JTable(tableModel);
+
         productTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         productTable.setFillsViewportHeight(true);
-        add(new JScrollPane(productTable), BorderLayout.CENTER);
+        JScrollPane tableScrollPane = new JScrollPane(productTable);
+        add(tableScrollPane, BorderLayout.CENTER);
 
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -103,11 +131,11 @@ public abstract class BaseFrame extends JFrame {
             }
         });
 
-        // Start timer to update current time every second
         startTimer();
 
         displayAllProducts();
     }
+
 
     private void startTimer() {
         Timer timer = new Timer();
@@ -134,11 +162,15 @@ public abstract class BaseFrame extends JFrame {
         tableModel.setRowCount(0);  
         String selectedProductType = (String) productTypeComboBox.getSelectedItem();
         List<?> products = null;
+        
+        playButton.setVisible(false);
+        viewTrack.setVisible(false);
 
         if ("DVD".equals(selectedProductType)) {
         	tableModel.setColumnIdentifiers(new String[] {"ID", "Title", "Category", "Director", "Length (minutes)", "Cost"});
             products = dvd.getDVDs();
             setColumnWidthsForDVD();
+            playButton.setVisible(true);
         } else if ("Book".equals(selectedProductType)) {
         	tableModel.setColumnIdentifiers((new String[] {"ID", "Title", "Category", "Author List", "Cost"}));
             products = book.getBooks();
@@ -147,6 +179,8 @@ public abstract class BaseFrame extends JFrame {
         	tableModel.setColumnIdentifiers((new String[] {"ID", "Title", "Category", "Artist", "Director", "Length (minutes)", "Cost","Tracks"}));
             products = cd.getCDs();
             setColumnWidthsForCD();
+            playButton.setVisible(true);
+            viewTrack.setVisible(true);
         }
 
 
@@ -155,6 +189,20 @@ public abstract class BaseFrame extends JFrame {
                 String[] rowData = getProductRowData(product);
                 tableModel.addRow(rowData);
             }
+        }
+    }
+    public void playMedia() {
+        int selectedRow = productTable.getSelectedRow();
+        if (selectedRow != -1) {
+            String Id = (String) tableModel.getValueAt(selectedRow, 0);
+
+            if (Id.startsWith("DVD")) {
+                dvd.play(Id);
+            } else if (Id.startsWith("CD")) {
+            	cd.play(Id);
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select a valid Media to play.");
         }
     }
 
@@ -276,6 +324,61 @@ public abstract class BaseFrame extends JFrame {
                    String.valueOf(cd.getCost()).contains(query);
         }
         return false;
+    }
+    
+    public void viewTrack() {
+        int selectedRow = productTable.getSelectedRow();
+        if (selectedRow != -1) {
+            String Id = (String) tableModel.getValueAt(selectedRow, 0);
+            List<Track> tracks = CD.getTracksByCDId(Id);
+            CD cd = CD.getCDById(Id);
+
+            String[] columns = {"Track Id", "Title", "Length", "CD name"};
+            DefaultTableModel tableModel = new DefaultTableModel(columns, 0);
+
+            for (Track track : tracks) {
+                Object[] row = {track.getId(), track.getTitle(), track.getFormattedLength(), cd.getTitle()};
+                tableModel.addRow(row);
+            }
+
+            JTable table = new JTable(tableModel);
+
+            JFrame frame = new JFrame("CD Tracks");
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Only close this frame
+            frame.setSize(600, 300);
+
+            JPanel panel = new JPanel();
+            panel.setLayout(new BorderLayout());
+
+            JScrollPane scrollPane = new JScrollPane(table);
+            panel.add(scrollPane, BorderLayout.CENTER);
+
+            JPanel buttonPanel = new JPanel();
+            buttonPanel.setLayout(new FlowLayout());
+
+            JButton button1 = new JButton("Play");
+            button1.addActionListener(e -> playTrack(table));
+
+            buttonPanel.add(button1);
+            panel.add(buttonPanel, BorderLayout.SOUTH);
+
+            frame.add(panel);
+            frame.setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(null, "Please select a valid CD to view.");
+        }
+    }
+
+    
+    private static void playTrack(JTable table) {
+    	int selectedRow = table.getSelectedRow();
+        if (selectedRow != -1) {
+            String Id = (String) table.getValueAt(selectedRow, 0);
+            Track track = Track.getTrackById(Id);
+            track.play(Id);
+            }else {
+            	JOptionPane.showMessageDialog(null, "Please select a track to play.");
+            }
     }
     private void setColumnWidthsForCD() {
         TableColumn column = productTable.getColumnModel().getColumn(0);

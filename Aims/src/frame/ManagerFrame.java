@@ -11,13 +11,12 @@ import model.Book;
 import model.CD;
 import model.DVD;
 
-
 public class ManagerFrame extends JFrame {
     private DVD dvd; 
     private Book book;
     private CD cd;
 
-    public ManagerFrame(DVD dvd, Book book, CD cd) { 
+    public ManagerFrame(DVD dvd, Book book, CD cd ) { 
         this.dvd = dvd;
         this.book = book;
         this.cd = cd;
@@ -31,6 +30,7 @@ public class ManagerFrame extends JFrame {
         JButton productsButton = new JButton("Products");
         JButton ordersButton = new JButton("Orders");
         JButton logoutButton = new JButton("Logout");
+        
 
         buttonPanel.add(productsButton);
         buttonPanel.add(ordersButton);

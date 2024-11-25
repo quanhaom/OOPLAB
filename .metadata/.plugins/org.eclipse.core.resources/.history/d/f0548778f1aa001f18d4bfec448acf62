@@ -1,0 +1,111 @@
+package model;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import frame.PlaybackDialog;
+import services.MySQLConnection;
+
+public class Track implements Playable {
+    private String title;
+    private String id ;
+    private int length; 
+    private static Connection connection;
+    public Track() {
+    	this.title="";
+    	this.id="";
+    	this.length=0;
+    }
+
+    public Track(String id,String title, int length) {
+        this.title = title;
+        this.id = id;
+        this.length = length;
+        try {
+            connection = new MySQLConnection().getConnection();
+        } catch (SQLException e) {
+                 e.printStackTrace();
+        }
+    }
+
+    public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public void setLength(int length) {
+		this.length = length;
+	}
+
+	public String getTitle() {
+        return title;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public String getFormattedLength() {
+        int minutes = length / 60;
+        int seconds = length % 60;
+        return minutes + ":" + String.format("%02d", seconds);
+    }    
+
+    
+    @Override
+    public void play(String id) {
+    	System.out.print(id);
+    	String sql = "SELECT * FROM track WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+
+                    String cdname =(rs.getString("cd_id"));
+                    String title = (rs.getString("title"));
+                    int length=(rs.getInt("length"));
+                    String newtitle = title + "( " + cdname + " )";
+                    new PlaybackDialog(newtitle, length);
+
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public static Track getTrackById(String id) {
+        String sql = "SELECT * FROM track WHERE id = ?";
+        Track track = new Track();
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+
+                    track.setId(rs.getString("id"));
+                    track.setTitle(rs.getString("title"));
+                    track.setLength(rs.getInt("length"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+		return track;     
+}
+    
+    @Override
+    public String toString() {
+        return title + " (" + getFormattedLength() + ")";
+    }
+    
+}

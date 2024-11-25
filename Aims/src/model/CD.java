@@ -3,10 +3,11 @@ package model;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import services.JsonParser;
+
+import frame.PlaybackDialog;
 import services.MySQLConnection;
 
-public class CD extends Media {
+public class CD extends Media implements Playable {
     private List<Track> tracks;
     private String artists;
     private String director;
@@ -68,9 +69,6 @@ public class CD extends Media {
         return connection;
     }
 
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
 
     public List<CD> getCDs() {
         List<CD> cds = new ArrayList<>();
@@ -141,4 +139,41 @@ public class CD extends Media {
         }
 		return cd;     
     }
+    @Override
+    public void play(String Id) {
+    	CD cd = getCDById(Id);
+        List<Track> tracks = getTracksByCDId(Id);
+        playTrack(tracks, 0,cd.getTitle());
+    }
+
+    private void playTrack(List<Track> tracks, int index,String cdname) {
+        if (index < tracks.size()) {
+            Track track = tracks.get(index);
+
+            String trackName = track.getTitle();
+            trackName = trackName + "( " + cdname + " )";
+            int trackLength = track.getLength(); 
+            PlaybackDialog playbackDialog = new PlaybackDialog(trackName, trackLength);
+
+            // Start a new thread to check if the track has finished playing
+            new Thread(() -> {
+                while (!playbackDialog.isComplete()) {
+                    try {
+                        Thread.sleep(100); // Check every 100ms if the track has finished
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // Once the track is complete, play the next track
+                playTrack(tracks, index + 1,cdname);
+            }).start();
+
+        } else {
+            // All tracks have finished
+            System.out.println("All tracks completed!");
+        }
+    }
+
+
 }

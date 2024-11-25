@@ -8,16 +8,16 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import services.JsonParser;
+import frame.PlaybackDialog;
 import services.MySQLConnection;
 
-public class DVD extends Media{
+public class DVD extends Media implements Playable{
 	 private String director;
-	 private double length;
+	 private int length;
 	 private static Connection connection;
 	    public DVD() {
 	        this.director = "";
-	        this.length = 0.0;
+	        this.length = 0;
 	        try {
 	            connection = new MySQLConnection().getConnection();
 	        } catch (SQLException e) {
@@ -25,7 +25,7 @@ public class DVD extends Media{
 	        }
 	    }
 	 
-	 public DVD(String id, String title, String category, String director,double length,double cost) {
+	 public DVD(String id, String title, String category, String director,int length,double cost) {
 		 super(id,title,category,cost);
 		 this.director = director;
 		 this.length = length;
@@ -36,10 +36,10 @@ public class DVD extends Media{
 	public void setDirector(String director) {
 		this.director = director;
 	}
-	public double getLength() {
+	public int getLength() {
 		return length;
 	}
-	public void setLength(double length) {
+	public void setLength(int length) {
 		this.length = length;
 	}
     public List<DVD> getDVDs() {
@@ -53,7 +53,7 @@ public class DVD extends Media{
                 dvd.setTitle(rs.getString("title"));
                 dvd.setCategory(rs.getString("category"));
                 dvd.setDirector(rs.getString("director"));
-                dvd.setLength(rs.getFloat("length"));
+                dvd.setLength(rs.getInt("length"));
                 dvd.setCost(rs.getFloat("cost"));
                 dvds.add(dvd);
             }
@@ -76,7 +76,7 @@ public class DVD extends Media{
                     dvd.setTitle(rs.getString("title"));
                     dvd.setCategory(rs.getString("category"));
                     dvd.setDirector(rs.getString("director"));
-                    dvd.setLength(rs.getFloat("length"));
+                    dvd.setLength(rs.getInt("length"));
                     dvd.setCost(rs.getFloat("cost"));
 
                 }
@@ -85,7 +85,11 @@ public class DVD extends Media{
             e.printStackTrace();
         }
 		return dvd;     
-}
-
-	
+}	
+    @Override
+    public void play(String Id) {
+    	DVD dvd = getDVDById(Id);
+    	int totalLength = dvd.getLength()*60;
+    	new PlaybackDialog(dvd.getTitle(),totalLength);
+    }
 }

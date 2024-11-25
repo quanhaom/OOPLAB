@@ -8,6 +8,10 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JOptionPane;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+
 import services.MySQLConnection;
 import services.JsonParser;
 public class Manager {
@@ -49,7 +53,7 @@ public class Manager {
         return users;
     }
 
-    public static String getNextProductId(String a) {
+    public static String getNextmediaId(String a) {
         String db = a.equals("DVD") ? "products" : 
                     a.equals("B") ? "books" : 
                     a.equals("CD") ? "cd" : "";
@@ -85,7 +89,7 @@ public class Manager {
         String sqlInsert = "INSERT INTO products (id, title, category, director, length, cost) VALUES (?, ?, ?, ?, ?, ?)";
         
         try {
-            String newId = getNextProductId("DVD");
+            String newId = getNextmediaId("DVD");
             try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
                 stmtInsert.setString(1, newId);
                 stmtInsert.setString(2, dvd.getTitle());
@@ -102,7 +106,7 @@ public class Manager {
     public void addMedia(Book book) {
         String sqlInsert = "INSERT INTO books (id, title, category, authors, cost) VALUES (?, ?, ?, ?, ?)";
         try {
-            String newId = getNextProductId("B");
+            String newId = getNextmediaId("B");
 
             String authorsJson = JsonParser.toJsonArray(book.getAuthors());
             try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
@@ -122,7 +126,7 @@ public class Manager {
         String sqlInsert = "INSERT INTO cd (id, title, category, price, artist, director) VALUES (?, ?, ?, ?, ?, ?)";
 
         try {
-            String newId = getNextProductId("CD");
+            String newId = getNextmediaId("CD");
             try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
                 stmtInsert.setString(1, newId);
                 stmtInsert.setString(2, cd.getTitle());
@@ -154,19 +158,39 @@ public class Manager {
         }
     }
 
-
-
-
-    public void removeProduct(String productId) {
-    	String db = productId.startsWith("DVD") ? "products" : 
-            (productId.startsWith("B") ? "books" : 
-            (productId.startsWith("CD") ? "cd" : ""));
+    public void removeMedia(String mediaId) {
+    	String db = mediaId.startsWith("DVD") ? "products" : 
+            (mediaId.startsWith("B") ? "books" : 
+            (mediaId.startsWith("CD") ? "cd" : ""));
         String sql = "DELETE FROM " + db + " WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, productId);
+            stmt.setString(1, mediaId);
             stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+    public static void removeTrack(JTable trackTable) {
+        int selectedRow = trackTable.getSelectedRow();
+        if (selectedRow != -1) {
+            String trackId = (String) trackTable.getValueAt(selectedRow, 0); 
+            int confirmation = JOptionPane.showConfirmDialog(
+                null,
+                "Are you sure you want to remove the selected track?",
+                "Confirm Removal",
+                JOptionPane.YES_NO_OPTION
+            );
+            if (confirmation == JOptionPane.YES_OPTION) {
+                boolean success = Track.removeTrack(trackId);
+                if (success) {
+                    JOptionPane.showMessageDialog(null, "Track removed successfully.");
+                    ((DefaultTableModel) trackTable.getModel()).removeRow(selectedRow);
+                } else {
+                    JOptionPane.showMessageDialog(null, "Failed to remove track.");
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Please select a track to remove.");
         }
     }
 }

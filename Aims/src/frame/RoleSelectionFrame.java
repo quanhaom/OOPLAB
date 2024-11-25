@@ -42,7 +42,6 @@ public class RoleSelectionFrame extends JFrame {
             	DVD dvd = new DVD();
             	Book book = new Book();
             	CD cd = new CD();
-            	
                 CustomerFrame customerFrame = new CustomerFrame(dvd,book,cd);
                 customerFrame.setVisible(true);
                 dispose();            }
