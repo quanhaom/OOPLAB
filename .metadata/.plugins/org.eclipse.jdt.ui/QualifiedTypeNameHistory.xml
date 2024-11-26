@@ -5,4 +5,5 @@
     <fullyQualifiedTypeName name="java.lang.Integer"/>
     <fullyQualifiedTypeName name="frame.PlaybackDialog"/>
     <fullyQualifiedTypeName name="model.CD"/>
+    <fullyQualifiedTypeName name="model.Media"/>
 </qualifiedTypeNameHistroy>
