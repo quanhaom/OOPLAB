@@ -2,4 +2,3 @@ INDEX VERSION 1.134+C:\Users\ADMIN\Downloads\lab\LAB4\.metadata\.plugins\org.ecl
 2837862323.index
 3571390068.index
 1865797976.index
-1177562956.index
