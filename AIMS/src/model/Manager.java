@@ -91,5 +91,25 @@ public class Manager {
             e.printStackTrace();
         }
     }
+    public void addMedia(CD cd) {
+        String sqlInsert = "INSERT INTO cd (id, title, category, price, artist, director) VALUES (?, ?, ?, ?, ?, ?)";
 
+        try {
+            String newId = Media.getNextmediaId("CD");
+            try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
+                stmtInsert.setString(1, newId);
+                stmtInsert.setString(2, cd.getTitle());
+                stmtInsert.setString(3, cd.getCategory());
+                stmtInsert.setDouble(4, cd.getCost());
+                stmtInsert.setString(5, cd.getArtists());
+                stmtInsert.setString(6, cd.getDirector());
+                stmtInsert.executeUpdate();
+            }
+
+            addTracks(newId, cd.getTracks());
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
