@@ -126,4 +126,16 @@ public class Manager {
             e.printStackTrace();
         }
     }
+    public void removeMedia(String mediaId) {
+    	String db = mediaId.startsWith("DVD") ? "products" : 
+            (mediaId.startsWith("B") ? "books" : 
+            (mediaId.startsWith("CD") ? "cd" : ""));
+        String sql = "DELETE FROM " + db + " WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, mediaId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
