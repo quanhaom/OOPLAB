@@ -154,4 +154,8 @@ public class Manager {
                     JOptionPane.showMessageDialog(null, "Track removed successfully.");
                     ((DefaultTableModel) trackTable.getModel()).removeRow(selectedRow);
                 } else {
+                    JOptionPane.showMessageDialog(null, "Failed to remove track.");
+                }
+            }
+        } else {
 }
