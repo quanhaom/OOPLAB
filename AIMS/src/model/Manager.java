@@ -72,5 +72,24 @@ public class Manager {
             e.printStackTrace();
         }
     }
+    public void addMedia(Book book) {
+        String sqlInsert = "INSERT INTO books (id, title, category, authors, cost) VALUES (?, ?, ?, ?, ?)";
+        try {
+            String newId = Media.getNextmediaId("B");
+
+            String authorsJson = JsonParser.toJsonArray(book.getAuthors());
+            try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
+                stmtInsert.setString(1, newId);
+                stmtInsert.setString(2, book.getTitle());
+                stmtInsert.setString(3, book.getCategory());
+                stmtInsert.setString(4, authorsJson);
+                stmtInsert.setDouble(5, book.getCost());
+                stmtInsert.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
 }
