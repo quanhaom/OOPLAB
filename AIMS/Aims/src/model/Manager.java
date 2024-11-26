@@ -8,12 +8,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JOptionPane;
-import javax.swing.JTable;
-import javax.swing.table.DefaultTableModel;
-
 import services.MySQLConnection;
-import services.JsonParser;
+
 public class Manager {
     private String username;
     private String password;
@@ -53,14 +49,26 @@ public class Manager {
         return users;
     }
 
+    public static int getNextProductId() {
+        String sqlMaxId = "SELECT COALESCE(MAX(id), 0) FROM products";
+        try (PreparedStatement stmt = connection.prepareStatement(sqlMaxId);
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1) + 1; 
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 1; 
+    }
 
-    public void addMedia(DVD dvd) {
+    public void addDigitalVideoDisc(DVD dvd) {
         String sqlInsert = "INSERT INTO products (id, title, category, director, length, cost) VALUES (?, ?, ?, ?, ?, ?)";
         
         try {
-            String newId = Media.getNextmediaId("DVD");
+            int newId = getNextProductId();
             try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
-                stmtInsert.setString(1, newId);
+                stmtInsert.setInt(1, newId);
                 stmtInsert.setString(2, dvd.getTitle());
                 stmtInsert.setString(3, dvd.getCategory());
                 stmtInsert.setString(4, dvd.getDirector());
@@ -72,5 +80,13 @@ public class Manager {
             e.printStackTrace();
         }
     }
-
+    public void removeProduct(String productId) {
+        String sql = "DELETE FROM products WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, productId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
