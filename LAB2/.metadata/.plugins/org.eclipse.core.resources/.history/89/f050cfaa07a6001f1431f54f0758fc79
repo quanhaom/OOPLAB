@@ -1,8 +1,0 @@
-package frame;
-
-public class TestPassingParameter {
-
-	public static void Main(String[] args) {
-		DVD jungleDVD = new DVD("1","Jungle");
-	}
-}

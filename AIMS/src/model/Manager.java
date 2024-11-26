@@ -158,4 +158,7 @@ public class Manager {
                 }
             }
         } else {
+            JOptionPane.showMessageDialog(null, "Please select a track to remove.");
+        }
+    }
 }
