@@ -138,4 +138,10 @@ public class Manager {
             e.printStackTrace();
         }
     }
+    public static void removeTrack(JTable trackTable) {
+        int selectedRow = trackTable.getSelectedRow();
+        if (selectedRow != -1) {
+            String trackId = (String) trackTable.getValueAt(selectedRow, 0); 
+            int confirmation = JOptionPane.showConfirmDialog(
+                null,
 }
