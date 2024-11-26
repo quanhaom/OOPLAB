@@ -112,4 +112,18 @@ public class Manager {
             e.printStackTrace();
         }
     }
+    private void addTracks(String cdId, List<Track> tracks) {
+        String sqlInsertTrack = "INSERT INTO track (cd_id, title, length) VALUES (?, ?, ?)";
+
+        try (PreparedStatement stmtInsertTrack = connection.prepareStatement(sqlInsertTrack)) {
+            for (Track track : tracks) {
+                stmtInsertTrack.setString(1, cdId);
+                stmtInsertTrack.setString(2, track.getTitle()); 
+                stmtInsertTrack.setInt(3, track.getLength()); 
+                stmtInsertTrack.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
