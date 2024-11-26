@@ -144,4 +144,14 @@ public class Manager {
             String trackId = (String) trackTable.getValueAt(selectedRow, 0); 
             int confirmation = JOptionPane.showConfirmDialog(
                 null,
+                "Are you sure you want to remove the selected track?",
+                "Confirm Removal",
+                JOptionPane.YES_NO_OPTION
+            );
+            if (confirmation == JOptionPane.YES_OPTION) {
+                boolean success = Track.removeTrack(trackId);
+                if (success) {
+                    JOptionPane.showMessageDialog(null, "Track removed successfully.");
+                    ((DefaultTableModel) trackTable.getModel()).removeRow(selectedRow);
+                } else {
 }
