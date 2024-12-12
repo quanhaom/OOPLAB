@@ -1,7 +1,0 @@
-package model;
-
-public interface Playable {
-    void play();
-
-	void play(String Id);
-}

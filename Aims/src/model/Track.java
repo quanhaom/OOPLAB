@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 
 import frame.PlaybackDialog;
 import services.MySQLConnection;
@@ -94,7 +93,6 @@ public class Track implements Playable {
             stmt.setString(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-
                     track.setId(rs.getString("id"));
                     track.setTitle(rs.getString("title"));
                     track.setLength(rs.getInt("length"));
@@ -112,7 +110,6 @@ public class Track implements Playable {
             stmt.setString(2, title);
             stmt.setInt(3, length);
             stmt.setString(4, cdId);
-
             int rowsInserted = stmt.executeUpdate();
             if (rowsInserted > 0) {
                 return true;
@@ -128,7 +125,6 @@ public class Track implements Playable {
         String sql = "DELETE FROM track WHERE id = ?";
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
             stmt.setString(1, trackId);
-
             int rowsDeleted = stmt.executeUpdate();
             if (rowsDeleted > 0) {
                 return true;
@@ -147,8 +143,6 @@ public class Track implements Playable {
         Track other = (Track) obj;
         return super.equals(other) && this.length == other.length;
     }
-
-
     @Override
     public String toString() {
         return title + " (" + getFormattedLength() + ")";

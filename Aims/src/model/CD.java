@@ -154,8 +154,6 @@ public class CD extends Media implements Playable {
             trackName = trackName + "( " + cdname + " )";
             int trackLength = track.getLength(); 
             PlaybackDialog playbackDialog = new PlaybackDialog(trackName, trackLength);
-
-            // Start a new thread to check if the track has finished playing
             new Thread(() -> {
                 while (!playbackDialog.isComplete()) {
                     try {
@@ -165,12 +163,10 @@ public class CD extends Media implements Playable {
                     }
                 }
 
-                // Once the track is complete, play the next track
                 playTrack(tracks, index + 1,cdname);
             }).start();
 
         } else {
-            // All tracks have finished
             System.out.println("All tracks completed!");
         }
     }

@@ -53,43 +53,12 @@ public class Manager {
         return users;
     }
 
-    public static String getNextmediaId(String a) {
-        String db = a.equals("DVD") ? "products" : 
-                    a.equals("B") ? "books" : 
-                    a.equals("CD") ? "cd" : "";
-
-        String sqlMaxId = "SELECT COALESCE(MAX(id), 0) FROM " + db;
-        
-        try (PreparedStatement stmt = connection.prepareStatement(sqlMaxId);
-             ResultSet rs = stmt.executeQuery()) {
-            
-            if (rs.next()) {
-                String currentIdStr = rs.getString(1);
-
-                if (currentIdStr != null && !currentIdStr.isEmpty()) {
-                    String numericPart = currentIdStr.substring(a.length());
-
-                    try {
-                        int nextId = Integer.parseInt(numericPart) + 1;
-                        return a + nextId;
-                    } catch (NumberFormatException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
 
     public void addMedia(DVD dvd) {
         String sqlInsert = "INSERT INTO products (id, title, category, director, length, cost) VALUES (?, ?, ?, ?, ?, ?)";
         
         try {
-            String newId = getNextmediaId("DVD");
+            String newId = Media.getNextmediaId("DVD");
             try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
                 stmtInsert.setString(1, newId);
                 stmtInsert.setString(2, dvd.getTitle());
@@ -106,7 +75,7 @@ public class Manager {
     public void addMedia(Book book) {
         String sqlInsert = "INSERT INTO books (id, title, category, authors, cost) VALUES (?, ?, ?, ?, ?)";
         try {
-            String newId = getNextmediaId("B");
+            String newId = Media.getNextmediaId("B");
 
             String authorsJson = JsonParser.toJsonArray(book.getAuthors());
             try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
@@ -126,7 +95,7 @@ public class Manager {
         String sqlInsert = "INSERT INTO cd (id, title, category, price, artist, director) VALUES (?, ?, ?, ?, ?, ?)";
 
         try {
-            String newId = getNextmediaId("CD");
+            String newId = Media.getNextmediaId("CD");
             try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
                 stmtInsert.setString(1, newId);
                 stmtInsert.setString(2, cd.getTitle());

@@ -18,6 +18,7 @@ import model.CD;
 import model.DVD;
 import model.Track;
 import model.Manager;
+import model.Media;
 import services.JsonParser;
 
 public class ProductFrame extends BaseFrame {
@@ -53,7 +54,6 @@ public class ProductFrame extends BaseFrame {
         removeProductButton.addActionListener(e -> removeProduct());
         addTrackButton.addActionListener(e -> addTrack());
         
-        addTrackButton.setVisible(false);
 
         displayAllProducts();
     }
@@ -221,16 +221,11 @@ public class ProductFrame extends BaseFrame {
         }
     }
     private void addTrack() {
-        int selectedRow = productTable.getSelectedRow(); // productTable is the JTable showing CDs
+        int selectedRow = productTable.getSelectedRow(); 
         if (selectedRow != -1) {
-            String cdId = (String) tableModel.getValueAt(selectedRow, 0); // Get the selected CD's ID
-
-            // Prompt for track details
-            String trackId = JOptionPane.showInputDialog("Enter Track ID:");
-            if (trackId == null || trackId.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Track ID cannot be empty.");
-                return;
-            }
+            String cdId = (String) tableModel.getValueAt(selectedRow, 0); 
+            if (cdId.startsWith("CD")){
+            String trackId = Media.getNextTrackId();
 
             String title = JOptionPane.showInputDialog("Enter Track Title:");
             if (title == null || title.trim().isEmpty()) {
@@ -249,17 +244,20 @@ public class ProductFrame extends BaseFrame {
 
             boolean success = Track.addTrackToCD(cdId, trackId, title, length);
             if (success) {
+            	displayAllProducts();
                 JOptionPane.showMessageDialog(this, "Track added successfully to CD: " + cdId);
             } else {
                 JOptionPane.showMessageDialog(this, "Failed to add track to CD: " + cdId);
+            }
+            }
+            else {
+            	JOptionPane.showMessageDialog(this, "Please select a CD to add a track.");
             }
         } else {
             JOptionPane.showMessageDialog(this, "Please select a CD to add a track.");
         }
     }
-
-
-
+    
     private void back() {
         ManagerFrame managerFrame = new ManagerFrame(dvd,book,cd);
 		managerFrame.setVisible(true);

@@ -1,5 +1,0 @@
-package frame;
-
-public interface Playable {
-
-}

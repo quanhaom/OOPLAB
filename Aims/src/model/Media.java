@@ -1,16 +1,29 @@
 package model;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import services.MySQLConnection;
+
 public abstract class Media {
 	private String id;
     private String title;
     private String category;
     private double cost;
+	 private static Connection connection;
 
     public Media() {
         this.id = "";
         this.title = "";
         this.category = "";
         this.cost = 0.0;
+        try {
+            connection = new MySQLConnection().getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
     public Media(String id, String title, String category, double cost) {
         this.id = id;
@@ -57,5 +70,53 @@ public abstract class Media {
         Media other = (Media) obj;
         return this.title != null && this.title.equals(other.title);
     }
+    
+    public static String getNextmediaId(String a) {
+        String db = a.equals("DVD") ? "products" : 
+                    a.equals("B") ? "books" : 
+                    a.equals("CD") ? "cd" : "";
 
+        String sqlMaxId = "SELECT COALESCE(MAX(id), 0) FROM " + db;
+        
+        try (PreparedStatement stmt = connection.prepareStatement(sqlMaxId);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            if (rs.next()) {
+                String currentIdStr = rs.getString(1);
+
+                if (currentIdStr != null && !currentIdStr.isEmpty()) {
+                    String numericPart = currentIdStr.substring(a.length());
+
+                    try {
+                        int nextId = Integer.parseInt(numericPart) + 1;
+                        return a + nextId;
+                    } catch (NumberFormatException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+    public static  String getNextTrackId() {
+        String sqlMaxId = "SELECT COALESCE(MAX(id), 0) FROM track" ;
+        String newId = "";
+        try (PreparedStatement stmt = connection.prepareStatement(sqlMaxId);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            if (rs.next()) {
+                String currentIdStr = rs.getString(1);
+                int id = Integer.parseInt(currentIdStr) + 1;
+                newId += id;
+                
+                }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return newId;
+    }
+    
 }
